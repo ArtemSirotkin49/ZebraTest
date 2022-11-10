@@ -110,4 +110,30 @@ class TenderController extends AbstractController
         }
         return $this->json($result);
     }
+
+    #[Route('/tenders/fill/', name: 'fill_tenders', methods: ['POST'])]
+    public function fillTenders(ManagerRegistry $doctrine, Request $request): JsonResponse
+    {
+        $entityManager = $doctrine->getManager();
+        $file = $request->server->get("DOCUMENT_ROOT") . "/test_task_data.csv";
+        //открываем файл с CSV-данными
+        $fh = fopen($file, "r");
+        // делаем пропуск первой строки, смещая указатель на одну строку
+        fgetcsv($fh, 0, ',');
+        //читаем построчно содержимое CSV-файла
+        while (($row = fgetcsv($fh, 0, ",")) !== false) {
+            $tender = new Tender();
+            $tender->setExtCode($row[0]);
+            $tender->setNumber($row[1]);
+            $tender->setStatus($row[2]);
+            $tender->setName($row[3]);
+            $tender->setDateUpdate($row[4]);
+            $entityManager->persist($tender);
+        }
+        $entityManager->flush();
+        return $this->json([
+            "message" => "Rows added",
+            "status" => "OK",
+        ]);
+    }
 }
